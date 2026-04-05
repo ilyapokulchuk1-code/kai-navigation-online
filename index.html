@@ -2,346 +2,677 @@
 
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TeslaNav</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    body{background:#0a0a0a;color:#fff}
-
-```
-/* Loading */
-#loading{position:fixed;inset:0;z-index:200;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
-.logo-row{display:flex;align-items:center;gap:12px}
-.logo-icon{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#cc0000,#ff4444);display:flex;align-items:center;justify-content:center;font-size:22px}
-.logo-title{font-size:22px;font-weight:700;letter-spacing:.04em}
-.logo-ver{font-size:11px;color:#6b7280}
-.spinner-wrap{position:relative;width:48px;height:48px}
-.spin1{width:48px;height:48px;border-radius:50%;border:4px solid rgba(255,255,255,.1);border-top-color:#3b82f6;animation:spin 1s linear infinite;position:absolute}
-.spin2{width:48px;height:48px;border-radius:50%;border:4px solid transparent;border-top-color:rgba(96,165,250,.3);animation:spin 1.5s linear infinite reverse;position:absolute}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loading-msg{color:#9ca3af;font-size:14px}
-
-/* Map */
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<title>TeslaNav</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:#0d0d0d;color:#fff;-webkit-tap-highlight-color:transparent}
 #map{position:fixed;inset:0;z-index:1}
-/* Dark filter for OSM tiles */
-body.dark .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9)}
-body.dark .leaflet-container{background:#1a1a1a}
+.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.7)}
+.dark-tiles .leaflet-container{background:#111}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:400;background:#0d0d0d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s}
+#splash.fade{opacity:0;pointer-events:none}
+.sp-logo{display:flex;align-items:center;gap:14px}
+.sp-icon{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#cc0000,#ff3333);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 8px 28px rgba(200,0,0,.4)}
+.sp-name{font-size:28px;font-weight:800}
+.sp-sub{font-size:12px;color:#6b7280;margin-top:3px}
+.sp-spin{position:relative;width:50px;height:50px}
+.sp1,.sp2{position:absolute;inset:0;border-radius:50%;border:4px solid transparent}
+.sp1{border-top-color:#3b82f6;animation:spin 1s linear infinite}
+.sp2{border-top-color:rgba(96,165,250,.3);animation:spin 1.4s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp-msg{font-size:14px;color:#9ca3af}
+
+/* GPS BANNER */
+#gps-banner{position:fixed;top:0;left:0;right:0;z-index:300;background:rgba(220,38,38,.95);backdrop-filter:blur(16px);padding:13px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.2);box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#gps-banner.hidden{display:none}
+.gbn-text{flex:1;font-size:13px;font-weight:600;line-height:1.3}
+.gbn-sub{font-size:11px;opacity:.85;margin-top:1px;font-weight:400}
+#gps-fix-btn{flex-shrink:0;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.22);color:#fff;border:1px solid rgba(255,255,255,.4);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 
 /* UI */
 #ui{position:fixed;inset:0;z-index:10;pointer-events:none}
 #ui>*{pointer-events:all}
 
-/* Buttons */
-.btn{display:flex;align-items:center;justify-content:center;border-radius:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid;box-shadow:0 4px 20px rgba(0,0,0,.45);cursor:pointer;transition:transform .15s;user-select:none}
-.btn:hover{transform:scale(1.05)}
-.btn:active{transform:scale(.95)}
-.dk{background:rgba(26,26,26,.75);color:#fff;border-color:rgba(255,255,255,.12)}
-.bl{background:rgba(59,130,246,.85);color:#fff;border-color:rgba(96,165,250,.4)}
-.sq{width:72px;height:72px}
+/* SEARCH */
+#sw{position:absolute;top:16px;left:16px;right:16px}
+#sw.banner{top:76px}
+#sr{display:flex;gap:10px}
+#si{flex:1;height:62px;border-radius:16px;background:rgba(12,12,12,.94);border:1.5px solid rgba(255,255,255,.15);color:#fff;font-size:18px;padding:0 20px;outline:none;box-shadow:0 4px 24px rgba(0,0,0,.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);-webkit-appearance:none}
+#si::placeholder{color:#4b5563}
+#si:focus{border-color:rgba(59,130,246,.55)}
+#gb{height:62px;min-width:76px;border-radius:16px;background:#3b82f6;color:#fff;border:none;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(59,130,246,.4);transition:transform .1s;flex-shrink:0}
+#gb:active{transform:scale(.9)}
+#ac{background:rgba(10,10,10,.97);border:1px solid rgba(255,255,255,.12);border-top:none;border-radius:0 0 16px 16px;overflow:hidden;display:none;max-height:260px;overflow-y:auto;box-shadow:0 14px 40px rgba(0,0,0,.7)}
+.aci{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)}
+.aci:last-child{border-bottom:none}
+.aci:active{background:rgba(255,255,255,.08)}
+.ain{font-size:15px;font-weight:600;color:#fff}
+.aia{font-size:12px;color:#6b7280;margin-top:2px;line-height:1.3}
 
-/* Banner */
-#banner{position:absolute;top:16px;left:16px;padding:10px 16px;gap:8px;font-size:14px;font-weight:500}
-#banner svg{width:16px;height:16px;opacity:.5;transition:opacity .2s}
-#banner:hover svg{opacity:1}
+/* NAV BAR */
+#nb{position:absolute;top:98px;left:16px;right:16px;background:rgba(8,8,8,.96);border:1.5px solid rgba(59,130,246,.3);border-radius:20px;padding:16px 18px;display:none;box-shadow:0 6px 32px rgba(0,0,0,.7);backdrop-filter:blur(20px)}
+#nb.banner{top:178px}
+#nt{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+#tb{width:58px;height:58px;border-radius:14px;flex-shrink:0;background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.35);display:flex;align-items:center;justify-content:center;font-size:30px}
+#ns{font-size:20px;font-weight:700;flex:1;line-height:1.2}
+#nstop{width:42px;height:42px;border-radius:12px;flex-shrink:0;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.35);color:#ef4444;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#nstop:active{background:rgba(239,68,68,.35)}
+#nr2{display:flex;align-items:baseline;gap:8px}
+#ndv{font-size:34px;font-weight:800;color:#3b82f6;line-height:1}
+#ndu{font-size:14px;color:#6b7280}
+#neta{font-size:14px;color:#9ca3af;margin-left:auto}
+#ndest{font-size:12px;color:#4b5563;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Top-right */
-#top-right{position:absolute;top:16px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
-.follow-dot{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:#3b82f6;border:2px solid #fff;display:none}
-#alert-box{width:72px;padding:12px 0;border-radius:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(26,26,26,.75);border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 20px rgba(0,0,0,.45);display:none;flex-direction:column;align-items:center;gap:6px}
-.alert-row{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600}
-.ico{width:20px;height:20px;fill:currentColor;flex-shrink:0}
-.c-blue{color:#3b82f6}.c-red{color:#ef4444}.c-amber{color:#f59e0b}.c-gray{color:#9ca3af}
+/* ETA BAR */
+#etab{position:absolute;bottom:0;left:0;right:0;background:rgba(6,6,6,.97);border-top:1px solid rgba(255,255,255,.1);padding:14px 20px 22px;display:none;flex-direction:row;gap:8px;align-items:center;backdrop-filter:blur(20px)}
+.ec{display:flex;flex-direction:column;align-items:center;flex:1}
+.el{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.1em}
+.ev{font-size:26px;font-weight:800;line-height:1.15}
+.es{font-size:11px;color:#6b7280}
+.esep{width:1px;height:40px;background:rgba(255,255,255,.1);flex-shrink:0}
+#estop{padding:12px 18px;border-radius:12px;background:rgba(239,68,68,.14);color:#ef4444;border:1px solid rgba(239,68,68,.28);font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0}
+#estop:active{background:rgba(239,68,68,.28)}
 
-/* Speed HUD */
-#speed{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(26,26,26,.8);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px 24px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4);display:none}
-#speed-val{font-size:36px;font-weight:700;line-height:1}
-#speed-unit{font-size:12px;color:#9ca3af}
+/* SPEED */
+#spd{position:absolute;bottom:104px;left:16px;background:rgba(8,8,8,.92);border:1.5px solid rgba(255,255,255,.14);border-radius:18px;padding:10px 18px;text-align:center;display:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#sv{font-size:44px;font-weight:800;line-height:1}
+#su{font-size:11px;color:#6b7280;letter-spacing:.06em}
 
-/* Bottom-left */
-#bottom-left{position:absolute;bottom:24px;left:16px;display:flex;align-items:center;gap:12px}
-#brand-card{display:flex;align-items:center;gap:12px;padding:0 16px;height:64px;border-radius:12px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(26,26,26,.75);border:1px solid rgba(255,255,255,.12);box-shadow:0 4px 20px rgba(0,0,0,.45)}
-#brand-ico{width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,#cc0000,#ff4444);display:flex;align-items:center;justify-content:center;font-size:18px}
-.brand-name{font-size:14px;font-weight:700;letter-spacing:.04em}
-.brand-ver{font-size:10px;color:#6b7280}
+/* ALERT PANEL */
+#ap{position:absolute;top:16px;right:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#ap.banner{top:76px}
+#cb{width:78px;height:78px;border-radius:18px;background:rgba(12,12,12,.88);border:1.5px solid rgba(255,255,255,.14);box-shadow:0 4px 20px rgba(0,0,0,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;backdrop-filter:blur(20px)}
+#cb:active{transform:scale(.91)}
+#fd{position:absolute;top:-5px;right:-5px;width:16px;height:16px;border-radius:50%;background:#3b82f6;border:2.5px solid #0d0d0d;display:none;box-shadow:0 0 8px rgba(59,130,246,.6)}
+#abox{background:rgba(12,12,12,.88);border:1.5px solid rgba(255,255,255,.12);border-radius:16px;padding:10px 14px;display:none;flex-direction:column;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,.5);align-items:center;backdrop-filter:blur(20px)}
+.ar{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700}
 
-/* Bottom-right */
-#bottom-right{position:absolute;bottom:24px;right:16px;display:flex;gap:12px;align-items:center}
-#recenter-btn{display:none;align-items:center;gap:8px;padding:0 24px;height:64px;font-size:18px;font-weight:500}
+/* BOTTOM */
+#bot{position:absolute;bottom:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
+#bot>*{pointer-events:all}
+.bg{display:flex;gap:10px;align-items:center}
+#bcard{display:flex;align-items:center;gap:10px;padding:0 16px;height:78px;border-radius:18px;background:rgba(12,12,12,.88);border:1.5px solid rgba(255,255,255,.12);box-shadow:0 4px 20px rgba(0,0,0,.5);backdrop-filter:blur(20px)}
+.bico{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#cc0000,#ff3333);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 10px rgba(180,0,0,.4);flex-shrink:0}
+.bnm{font-size:15px;font-weight:800}
+.bvr{font-size:11px;color:#6b7280;margin-top:2px}
+.cbtn{width:78px;height:78px;border-radius:18px;background:rgba(12,12,12,.88);border:1.5px solid rgba(255,255,255,.14);box-shadow:0 4px 20px rgba(0,0,0,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;backdrop-filter:blur(20px);transition:transform .1s}
+.cbtn:active{transform:scale(.9)}
+.cbtn.on{background:rgba(59,130,246,.85);border-color:rgba(96,165,250,.45)}
+#rctr{display:none;height:78px;padding:0 22px;border-radius:18px;background:rgba(59,130,246,.88);color:#fff;border:1.5px solid rgba(96,165,250,.5);font-size:16px;font-weight:700;cursor:pointer;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(59,130,246,.35);backdrop-filter:blur(20px);transition:transform .1s}
+#rctr:active{transform:scale(.93)}
 
-/* Police alert */
-#police{position:fixed;inset:0;z-index:50;pointer-events:none;display:none;overflow:hidden}
-#police.show{display:block;animation:fade-out 3s ease-out forwards}
-.glow-b{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(59,130,246,.7),transparent 30%),linear-gradient(to top,rgba(59,130,246,.7),transparent 30%),linear-gradient(to right,rgba(59,130,246,.7),transparent 20%),linear-gradient(to left,rgba(59,130,246,.7),transparent 20%);animation:fl-b .5s ease-in-out infinite}
-.glow-r{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(239,68,68,.7),transparent 30%),linear-gradient(to top,rgba(239,68,68,.7),transparent 30%),linear-gradient(to right,rgba(239,68,68,.7),transparent 20%),linear-gradient(to left,rgba(239,68,68,.7),transparent 20%);animation:fl-r .5s ease-in-out infinite}
-.p-banner{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;animation:pull .4s ease-out,bgl .5s ease-in-out infinite}
-.p-inner{background:rgba(0,0,0,.92);backdrop-filter:blur(12px);padding:22px 48px;border-radius:0 0 24px 24px;border:1px solid rgba(255,255,255,.2);border-top:none;display:flex;align-items:center;gap:16px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
-.p-inner span{font-size:32px;font-weight:700;letter-spacing:.05em}
-.p-ico{width:44px;height:44px;fill:#60a5fa;animation:ic .5s ease-in-out infinite}
-@keyframes fade-out{0%,85%{opacity:1}100%{opacity:0}}
+/* POLICE */
+#po{position:fixed;inset:0;z-index:50;pointer-events:none;display:none;overflow:hidden}
+#po.show{display:block;animation:po-f 4s forwards}
+.pob,.por{position:absolute;inset:0}
+.pob{background:linear-gradient(to bottom,rgba(37,99,235,.8),transparent 35%),linear-gradient(to top,rgba(37,99,235,.8),transparent 35%),linear-gradient(to right,rgba(37,99,235,.8),transparent 28%),linear-gradient(to left,rgba(37,99,235,.8),transparent 28%);animation:fl-b .5s ease-in-out infinite}
+.por{background:linear-gradient(to bottom,rgba(220,38,38,.8),transparent 35%),linear-gradient(to top,rgba(220,38,38,.8),transparent 35%),linear-gradient(to right,rgba(220,38,38,.8),transparent 28%),linear-gradient(to left,rgba(220,38,38,.8),transparent 28%);animation:fl-r .5s ease-in-out infinite}
+.pot{position:absolute;top:0;left:0;right:0;display:flex;justify-content:center;animation:po-d .35s ease-out,po-g .5s ease-in-out infinite}
+.poi{background:rgba(0,0,0,.95);backdrop-filter:blur(20px);padding:22px 52px;border-radius:0 0 26px 26px;border:1px solid rgba(255,255,255,.15);border-top:none;display:flex;align-items:center;gap:16px;box-shadow:0 10px 40px rgba(0,0,0,.8)}
+.poi span{font-size:32px;font-weight:800;letter-spacing:.05em}
+.poico{font-size:44px}
+@keyframes po-f{0%,75%{opacity:1}100%{opacity:0}}
 @keyframes fl-b{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes fl-r{0%,100%{opacity:0}50%{opacity:1}}
-@keyframes pull{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
-@keyframes bgl{0%,100%{filter:drop-shadow(0 0 30px rgba(59,130,246,.8))}50%{filter:drop-shadow(0 0 30px rgba(239,68,68,.8))}}
-@keyframes ic{0%,100%{fill:#60a5fa}50%{fill:#f87171}}
+@keyframes po-d{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
+@keyframes po-g{0%,100%{filter:drop-shadow(0 0 28px rgba(37,99,235,.9))}50%{filter:drop-shadow(0 0 28px rgba(220,38,38,.9))}}
 
-/* Settings modal */
-.overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:24px}
-.modal{background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:24px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.7);overflow:hidden}
-.m-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.08)}
-.m-head h2{font-size:18px;font-weight:700}
-.m-close{width:32px;height:32px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;border:none;color:#fff;transition:background .15s}
-.m-close:hover{background:rgba(255,255,255,.18)}
-.m-body{padding:8px 0;max-height:70vh;overflow-y:auto}
-.m-sect{padding:8px 24px 16px}
-.m-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#6b7280;margin-bottom:8px}
-.t-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.t-row:last-child{border-bottom:none}
-.t-label{font-size:14px;font-weight:500}
-.t-desc{font-size:12px;color:#9ca3af;margin-top:2px}
-.tog{width:48px;height:28px;border-radius:14px;cursor:pointer;background:#374151;position:relative;transition:background .2s;flex-shrink:0;border:none}
-.tog.on{background:#3b82f6}
-.tog::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.tog.on::after{transform:translateX(20px)}
-.gh-link{display:flex;align-items:center;gap:8px;padding:12px;border-radius:12px;background:rgba(255,255,255,.05);text-decoration:none;color:#fff;font-size:14px;border:1px solid rgba(255,255,255,.08);margin-top:8px}
+/* SETTINGS */
+#sbg{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:20px}
+#sm{background:#111;border:1px solid rgba(255,255,255,.13);border-radius:24px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.9);overflow:hidden}
+.shd{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(255,255,255,.08)}
+.shd h2{font-size:19px;font-weight:800}
+.sx{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sx:hover{background:rgba(255,255,255,.16)}
+.sbdy{max-height:72vh;overflow-y:auto;padding:6px 0}
+.ssec{padding:6px 24px 14px}
+.slbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4b5563;padding-top:10px;margin-bottom:4px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.srow:last-child{border-bottom:none}
+.srn{font-size:15px;font-weight:600}
+.srd{font-size:12px;color:#6b7280;margin-top:2px}
+.tgl{width:52px;height:30px;border-radius:15px;background:#374151;position:relative;border:none;cursor:pointer;flex-shrink:0;transition:background .2s}
+.tgl.on{background:#3b82f6}
+.tgl::after{content:’’;position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+.tgl.on::after{transform:translateX(22px)}
 
-/* User dot */
-.user-dot{width:20px;height:20px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 5px rgba(59,130,246,.3)}
-```
+/* MARKERS */
+.udot{width:22px;height:22px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 5px rgba(59,130,246,.22),0 3px 10px rgba(0,0,0,.5)}
+.wm{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid rgba(255,255,255,.25);box-shadow:0 3px 12px rgba(0,0,0,.5)}
+.scm{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid;box-shadow:0 3px 12px rgba(0,0,0,.5)}
+.leaflet-popup-content-wrapper{background:#111!important;color:#fff!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,.7)!important}
+.leaflet-popup-tip{background:#111!important}
+.leaflet-popup-content{margin:10px 14px!important;font-size:14px}
+</style>
 
-  </style>
 </head>
-<body class="dark">
-
-<div id="loading">
-  <div class="logo-row">
-    <div class="logo-icon">⚡</div>
-    <div><div class="logo-title">TeslaNav</div><div class="logo-ver">v0.3.0</div></div>
+<body>
+<div id="splash">
+  <div class="sp-logo">
+    <div class="sp-icon">⚡</div>
+    <div><div class="sp-name">TeslaNav</div><div class="sp-sub">EV Navigator</div></div>
   </div>
-  <div class="spinner-wrap"><div class="spin1"></div><div class="spin2"></div></div>
-  <div id="loading-msg">Finding your location…</div>
+  <div class="sp-spin"><div class="sp1"></div><div class="sp2"></div></div>
+  <div class="sp-msg" id="spmsg">Loading map…</div>
+</div>
+
+<div id="gps-banner" class="hidden">
+  <div class="gbn-text">📍 Location denied
+    <div class="gbn-sub" id="gbn-sub">Enable in Tesla browser settings</div>
+  </div>
+  <button id="gps-fix-btn" onclick="tryGPS()">Enable GPS</button>
 </div>
 
 <div id="map"></div>
 
-<div id="ui" style="display:none">
-
-  <button class="btn dk" id="banner" onclick="openSettings()">
-    <span style="font-size:18px">❤️</span>
-    <span>Support this project</span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-  </button>
-
-  <div id="top-right">
-    <button class="btn dk sq" id="compass-btn" onclick="toggleFollow()" title="Follow mode" style="position:relative">
-      <svg id="compass-svg" viewBox="0 0 24 24" width="44" height="44">
-        <circle cx="12" cy="12" r="10" fill="none" stroke="#6b7280" stroke-width="1"/>
-        <text x="12" y="5.5" text-anchor="middle" font-size="4.5" fill="#f59e0b" font-weight="bold">N</text>
-        <path id="needle" d="M12 6 L14 12 L12 18 L10 12 Z" fill="#d1d5db"/>
-        <circle cx="12" cy="12" r="1.5" fill="#1a1a1a" stroke="#9ca3af" stroke-width="0.5"/>
-      </svg>
-      <div class="follow-dot" id="follow-dot"></div>
-    </button>
-
-```
-<div id="alert-box">
-  <div class="alert-row c-blue"  id="a-police"   style="display:none"><svg class="ico" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg><span id="n-police">0</span></div>
-  <div class="alert-row c-red"   id="a-accident" style="display:none"><svg class="ico" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg><span id="n-accident">0</span></div>
-  <div class="alert-row c-amber" id="a-hazard"   style="display:none"><svg class="ico" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg><span id="n-hazard">0</span></div>
-  <div class="alert-row c-gray"  id="a-closed"   style="display:none"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg><span id="n-closed">0</span></div>
-</div>
-```
-
-  </div>
-
-  <div id="speed"><div id="speed-val">0</div><div id="speed-unit">mph</div></div>
-
-  <div id="bottom-left">
-    <div id="brand-card">
-      <div id="brand-ico">⚡</div>
-      <div><div class="brand-name">TeslaNav</div><div class="brand-ver">v0.3.0</div></div>
+<div id="ui">
+  <div id="sw">
+    <div id="sr">
+      <input id="si" type="search" placeholder="🔍  Where to go?" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <button id="gb" onclick="doSearch()">Go</button>
     </div>
-    <button class="btn dk sq" onclick="openSettings()">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-    </button>
-    <button class="btn sq" id="sat-btn" onclick="toggleSatellite()">
-      <span style="font-size:26px;line-height:1">🛰️</span>
-    </button>
+    <div id="ac"></div>
   </div>
 
-  <div id="bottom-right">
-    <button class="btn bl" id="recenter-btn" onclick="recenter()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v4m0 12v4m10-10h-4M6 12H2"/></svg>
-      <span>Recenter</span>
-    </button>
-    <button class="btn dk sq" onclick="zoomOut()">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/></svg>
-    </button>
-    <button class="btn dk sq" onclick="zoomIn()">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-    </button>
-    <button class="btn dk sq" id="dark-btn" onclick="toggleDark()">
-      <svg id="dark-ico" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-    </button>
+  <div id="nb">
+    <div id="nt">
+      <div id="tb"><span id="tico">↑</span></div>
+      <div id="ns">Follow the route</div>
+      <button id="nstop" onclick="cancelNav()">✕</button>
+    </div>
+    <div id="nr2">
+      <span id="ndv">0</span><span id="ndu">km</span><span id="neta"></span>
+    </div>
+    <div id="ndest"></div>
   </div>
 
-</div>
-
-<div id="police">
-  <div class="glow-b"></div>
-  <div class="glow-r"></div>
-  <div class="p-banner">
-    <div class="p-inner">
-      <svg class="p-ico" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-      <span>POLICE AHEAD</span>
+  <div id="ap">
+    <button id="cb" onclick="toggleFollow()">
+      <svg id="cmpsvg" viewBox="0 0 48 48" width="46" height="46">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="#374151" stroke-width="2"/>
+        <text x="24" y="11" text-anchor="middle" font-size="9" fill="#f59e0b" font-weight="800">N</text>
+        <path id="needle" d="M24 12 L27 24 L24 36 L21 24 Z" fill="#9ca3af"/>
+        <circle cx="24" cy="24" r="3.5" fill="#0d0d0d" stroke="#6b7280" stroke-width="1.2"/>
+      </svg>
+      <div id="fd"></div>
+    </button>
+    <div id="abox">
+      <div class="ar" id="arp" style="display:none">🚔 <span id="cp" style="color:#60a5fa">0</span></div>
+      <div class="ar" id="ara" style="display:none">💥 <span id="ca" style="color:#f87171">0</span></div>
+      <div class="ar" id="arh" style="display:none">⚠️ <span id="ch" style="color:#fbbf24">0</span></div>
+      <div class="ar" id="arc" style="display:none">⚡ <span id="cc" style="color:#4ade80">0</span></div>
     </div>
   </div>
-</div>
 
-<div id="settings-overlay" class="overlay" style="display:none" onclick="overlayClick(event)">
-  <div class="modal">
-    <div class="m-head">
-      <h2>Settings</h2>
-      <button class="m-close" onclick="closeSettings()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+  <div id="spd"><div id="sv">0</div><div id="su">km/h</div></div>
+
+  <div id="etab">
+    <div class="ec"><div class="el">Arrive</div><div class="ev" id="eat">—</div></div>
+    <div class="esep"></div>
+    <div class="ec"><div class="el">Remaining</div><div class="ev" id="elt">—</div><div class="es" id="edt">—</div></div>
+    <button id="estop" onclick="cancelNav()">■ Stop</button>
+  </div>
+
+  <div id="bot">
+    <div class="bg">
+      <div id="bcard">
+        <div class="bico">⚡</div>
+        <div><div class="bnm">TeslaNav</div><div class="bvr">EV Edition</div></div>
+      </div>
+      <button class="cbtn" onclick="openSettings()">⚙️</button>
+      <button class="cbtn" id="satbtn" onclick="toggleSat()">🛰️</button>
+      <button class="cbtn" id="evbtn"  onclick="toggleEV()">🔋</button>
+    </div>
+    <div class="bg">
+      <button id="rctr" onclick="recenter()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path stroke-linecap="round" d="M12 2v4m0 12v4m10-10h-4M6 12H2"/>
+        </svg>
+        Recenter
       </button>
-    </div>
-    <div class="m-body">
-      <div class="m-sect">
-        <div class="m-title">Map</div>
-        <div class="t-row"><div><div class="t-label">Dark Mode</div><div class="t-desc">Inverted dark map tiles</div></div><button class="tog on" id="t-dark" onclick="toggleDark()"></button></div>
-        <div class="t-row"><div><div class="t-label">Satellite View</div><div class="t-desc">Esri aerial imagery</div></div><button class="tog" id="t-sat" onclick="toggleSatellite()"></button></div>
-        <div class="t-row"><div><div class="t-label">Follow Mode</div><div class="t-desc">Keep map centered on location</div></div><button class="tog" id="t-follow" onclick="toggleFollow()"></button></div>
-      </div>
-      <div class="m-sect">
-        <div class="m-title">Alerts</div>
-        <div class="t-row"><div><div class="t-label">Waze Alerts</div><div class="t-desc">Police, accidents, hazards, closures</div></div><button class="tog on" id="t-waze" onclick="toggleWaze()"></button></div>
-        <div class="t-row"><div><div class="t-label">Police Alert Sound</div><div class="t-desc">Audible beep when police nearby</div></div><button class="tog" id="t-sound" onclick="toggleSound()"></button></div>
-        <div class="t-row"><div><div class="t-label">Support Banner</div></div><button class="tog on" id="t-banner" onclick="toggleBanner()"></button></div>
-      </div>
-      <div class="m-sect">
-        <a href="https://github.com/R44VC0RP/teslanav.com" target="_blank" class="gh-link">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-          View on GitHub
-        </a>
-      </div>
+      <button class="cbtn" onclick="map&&map.zoomOut()" style="font-size:36px;font-weight:700">−</button>
+      <button class="cbtn" onclick="map&&map.zoomIn()"  style="font-size:32px;font-weight:700">+</button>
+      <button class="cbtn" id="dkbtn" onclick="toggleDark()">🌙</button>
     </div>
   </div>
 </div>
 
+<div id="po">
+  <div class="pob"></div><div class="por"></div>
+  <div class="pot"><div class="poi">
+    <span class="poico">🚨</span><span>POLICE AHEAD</span>
+  </div></div>
+</div>
+
+<div id="sbg" onclick="if(event.target===this)closeSettings()">
+  <div id="sm">
+    <div class="shd"><h2>⚙️ Settings</h2>
+      <button class="sx" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="sbdy">
+      <div class="ssec">
+        <div class="slbl">Map</div>
+        <div class="srow"><div><div class="srn">Dark Mode</div></div><button class="tgl on" id="tdark" onclick="toggleDark()"></button></div>
+        <div class="srow"><div><div class="srn">Satellite</div><div class="srd">Esri aerial imagery</div></div><button class="tgl" id="tsat" onclick="toggleSat()"></button></div>
+        <div class="srow"><div><div class="srn">Follow GPS</div><div class="srd">Keep map on your position</div></div><button class="tgl" id="tfollow" onclick="toggleFollow()"></button></div>
+        <div class="srow"><div><div class="srn">Speed: km/h</div></div><button class="tgl on" id="tkmh" onclick="toggleKmh()"></button></div>
+      </div>
+      <div class="ssec">
+        <div class="slbl">Alerts & Charging</div>
+        <div class="srow"><div><div class="srn">Waze Alerts</div><div class="srd">🚔 Police  💥 Accidents  ⚠️ Hazards</div></div><button class="tgl on" id="twaze" onclick="toggleWaze()"></button></div>
+        <div class="srow"><div><div class="srn">EV Charging Stations</div><div class="srd">Tesla, IONITY, ChargeNow, Ecotrend…</div></div><button class="tgl on" id="tev" onclick="toggleEV()"></button></div>
+        <div class="srow"><div><div class="srn">Tesla Superchargers only</div><div class="srd">Filter to Tesla only</div></div><button class="tgl" id="tsconly" onclick="toggleSCOnly()"></button></div>
+        <div class="srow"><div><div class="srn">Police Sound</div></div><button class="tgl" id="tsound" onclick="toggleSound()"></button></div>
+      </div>
+      <div class="ssec">
+        <div class="slbl">GPS</div>
+        <div class="srow"><div><div class="srn" id="gpstxt">GPS: searching…</div><div class="srd">Tap button to request again</div></div></div>
+        <div style="padding:8px 0">
+          <button onclick="tryGPS()" style="width:100%;padding:13px;border-radius:12px;background:#3b82f6;color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">🔄 Request GPS Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
-const S = { lat:null, lng:null, heading:null, speed:0, dark:true, sat:false, follow:false, waze:true, sound:false, banner:true };
-let map, userMarker, policeTO, osmLayer, satLayer;
+'use strict';
+const ST={lat:null,lng:null,hdg:null,spd:0,acc:null,hasGPS:false,dark:true,sat:false,follow:false,kmh:true,waze:true,ev:true,scOnly:false,sound:false,navigating:false,policeAlerted:new Set()};
+let map,osmLayer,satLayer,userMarker,accCircle,routeLayer,destMarker,alertMarkers=[],evMarkers=[];
+let routeSteps=[],stepIdx=0,destName='',totalDist=0,totalTime=0;
+let watchId=null,policeTO=null,searchTO=null,_acList=[];
 
-// Geolocation
-navigator.geolocation.watchPosition(
-  pos => {
-    const first = S.lat === null;
-    Object.assign(S, { lat: pos.coords.latitude, lng: pos.coords.longitude, heading: pos.coords.heading, speed: pos.coords.speed ? Math.round(pos.coords.speed * 2.237) : 0 });
-    if (first) initMap();
-    else { updateMarker(); if (S.follow) map.setView([S.lat, S.lng]); updateSpeedHUD(); updateNeedle(); }
-  },
-  () => { if (S.lat === null) { S.lat = 55.7558; S.lng = 37.6173; document.getElementById('loading-msg').textContent = 'GPS недоступен — демо: Москва'; setTimeout(initMap, 1200); } },
-  { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
-);
+// BOOT
+window.addEventListener(‘DOMContentLoaded’,()=>{initMap();tryGPS();});
 
-function initMap() {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('ui').style.display = 'block';
-  map = L.map('map', { center:[S.lat,S.lng], zoom:15, zoomControl:false });
-  osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap contributors', maxZoom:19 });
-  satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution:'© Esri', maxZoom:19 });
-  osmLayer.addTo(map);
-  applyTheme();
-  addMarker();
-  setInterval(fetchAlerts, 60000);
-  fetchAlerts();
-  map.on('drag', () => setCentered(false));
-  map.on('moveend', checkCentered);
+// MAP
+function initMap(){
+map=L.map(‘map’,{center:[47.0,28.9],zoom:8,zoomControl:false,attributionControl:true});
+osmLayer=L.tileLayer(‘https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png’,{attribution:‘© OpenStreetMap’,maxZoom:19,detectRetina:true});
+satLayer=L.tileLayer(‘https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}’,{attribution:‘© Esri’,maxZoom:19});
+osmLayer.addTo(map);
+applyTheme();
+map.on(‘dragstart’,()=>setCentered(false));
+map.on(‘moveend’,()=>{clearTimeout(evMoveTO);evMoveTO=setTimeout(()=>{if(ST.ev)fetchEV();},1000);});
+const inp=$(‘si’);
+inp.addEventListener(‘keydown’,e=>{if(e.key===‘Enter’)doSearch();});
+inp.addEventListener(‘input’,()=>{
+clearTimeout(searchTO);
+const q=inp.value.trim();
+if(q.length<3){hideAC();return;}
+searchTO=setTimeout(()=>suggest(q),400);
+});
+fetchWaze();fetchEV();
+setInterval(fetchWaze,90000);setInterval(fetchEV,180000);
+map.once(‘load’,hideSplash);setTimeout(hideSplash,2000);
 }
 
-function addMarker() {
-  const el = document.createElement('div'); el.className = 'user-dot';
-  userMarker = L.marker([S.lat,S.lng], { icon: L.divIcon({html:el.outerHTML,className:'',iconSize:[20,20],iconAnchor:[10,10]}), zIndexOffset:1000 }).addTo(map);
-}
-function updateMarker() { userMarker && userMarker.setLatLng([S.lat, S.lng]); }
+function hideSplash(){const s=$(‘splash’);s.classList.add(‘fade’);setTimeout(()=>{s.style.display=‘none’;},500);}
 
-// Waze alerts via CORS proxy
-async function fetchAlerts() {
-  if (!S.waze || !map) return;
-  const b = map.getBounds();
-  const wazeUrl = `https://www.waze.com/live-map/api/georss?top=${b.getNorth()}&bottom=${b.getSouth()}&left=${b.getWest()}&right=${b.getEast()}`;
-  try {
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(wazeUrl), { signal: AbortSignal.timeout(8000) });
-    if (!r.ok) return;
-    const d = await r.json();
-    const alerts = (d.alerts || []).filter(a => ['POLICE','ACCIDENT','HAZARD','ROAD_CLOSED'].includes(a.type));
-    updateAlertUI(alerts);
-    alerts.filter(a=>a.type==='POLICE').forEach(a => { if (dist(S.lat,S.lng,a.location.y,a.location.x) < 805) showPolice(); });
-  } catch(_) {}
+// GPS
+function tryGPS(){
+if(!navigator.geolocation){showBanner(‘GPS not supported’);return;}
+setTxt(‘spmsg’,‘Requesting GPS…’);setTxt(‘gpstxt’,‘GPS: requesting…’);
+if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+watchId=navigator.geolocation.watchPosition(onGPS,onGPSFail,{enableHighAccuracy:true,maximumAge:0,timeout:30000});
 }
 
-function updateAlertUI(alerts) {
-  const c = {POLICE:0,ACCIDENT:0,HAZARD:0,ROAD_CLOSED:0};
-  alerts.forEach(a => a.type in c && c[a.type]++);
-  document.getElementById('alert-box').style.display = Object.values(c).some(v=>v>0) ? 'flex' : 'none';
-  [['a-police','n-police',c.POLICE],['a-accident','n-accident',c.ACCIDENT],['a-hazard','n-hazard',c.HAZARD],['a-closed','n-closed',c.ROAD_CLOSED]]
-    .forEach(([r,n,v]) => { document.getElementById(r).style.display = v>0?'flex':'none'; document.getElementById(n).textContent = v; });
+function onGPS(p){
+const first=!ST.hasGPS;
+ST.hasGPS=true;
+ST.lat=p.coords.latitude;ST.lng=p.coords.longitude;
+ST.hdg=p.coords.heading;ST.acc=Math.round(p.coords.accuracy);
+ST.spd=Math.round((p.coords.speed||0)*(ST.kmh?3.6:2.237));
+$(‘gps-banner’).classList.add(‘hidden’);
+[‘sw’,‘nb’,‘ap’].forEach(id=>{$(id).classList.remove(‘banner’);});
+setTxt(‘gpstxt’,‘GPS: ±’+ST.acc+‘m’);
+if(first){
+map.setView([ST.lat,ST.lng],15,{animate:true,duration:1.2});
+userMarker=L.marker([ST.lat,ST.lng],{icon:L.divIcon({html:’<div class="udot"></div>’,className:’’,iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:1000}).addTo(map);
+accCircle=L.circle([ST.lat,ST.lng],{radius:Math.max(ST.acc||10,10),color:’#3b82f6’,fillColor:’#3b82f6’,fillOpacity:.07,weight:1,opacity:.3}).addTo(map);
+// re-fetch with correct location
+fetchWaze();fetchEV();
+}else{
+if(userMarker)userMarker.setLatLng([ST.lat,ST.lng]);
+if(accCircle){accCircle.setLatLng([ST.lat,ST.lng]);accCircle.setRadius(Math.max(ST.acc||10,10));}
+if(ST.follow)map.setView([ST.lat,ST.lng]);
+if(ST.navigating)tickNav();
+}
+renderSpd();renderNeedle();
 }
 
-function dist(a,b,c,d) { const R=6371000,dL=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dl/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
-
-function showPolice() {
-  const el=document.getElementById('police'); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(policeTO); policeTO = setTimeout(()=>el.classList.remove('show'), 5000);
+function onGPSFail(e){
+ST.hasGPS=false;
+const msgs={1:‘Location denied — tap Enable GPS’,2:‘GPS unavailable’,3:‘GPS timeout — tap Enable GPS’};
+showBanner(msgs[e.code]||‘GPS error’);
+setTxt(‘gpstxt’,’GPS: ’+(msgs[e.code]||‘error’));
 }
 
-function applyTheme() {
-  document.body.className = S.sat ? '' : (S.dark ? 'dark' : 'light');
+function showBanner(msg){
+setTxt(‘gbn-sub’,msg);
+$(‘gps-banner’).classList.remove(‘hidden’);
+[‘sw’,‘nb’,‘ap’].forEach(id=>{$(id).classList.add(‘banner’);});
 }
 
-function toggleDark() {
-  S.dark=!S.dark; applyTheme(); tog('t-dark',S.dark);
-  const p='<path stroke-linecap="round" stroke-linejoin="round" '; 
-  document.getElementById('dark-ico').innerHTML = S.dark
-    ? p+'d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>'
-    : p+'d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+// SEARCH
+async function suggest(q){
+try{
+const c=map.getCenter();
+const url=`https://nominatim.openstreetmap.org/search?q=${enc(q)}&format=json&limit=6&addressdetails=1&viewbox=${c.lng-3},${c.lat-3},${c.lng+3},${c.lat+3}&bounded=0`;
+const res=await fetch(url,{headers:{‘Accept-Language’:‘ru,ro,en’},signal:AbortSignal.timeout(6000)});
+const data=await res.json();
+renderAC(data);
+}catch(_){hideAC();}
 }
 
-function toggleSatellite() {
-  S.sat=!S.sat;
-  if (map) { if (S.sat) { osmLayer.remove(); satLayer.addTo(map); } else { satLayer.remove(); osmLayer.addTo(map); } }
-  applyTheme();
-  const b=document.getElementById('sat-btn'); b.className='btn sq '+(S.sat?'bl':'dk'); tog('t-sat',S.sat);
+function renderAC(list){
+_acList=list||[];
+const box=$(‘ac’);
+if(!_acList.length){hideAC();return;}
+box.innerHTML=_acList.map((d,i)=>{
+const name=d.name||d.display_name.split(’,’)[0];
+const addr=d.display_name.split(’,’).slice(1,3).join(’, ‘).trim();
+return `<div class="aci" onclick="pickAC(${i})"><span style="font-size:20px;flex-shrink:0">📍</span><div><div class="ain">${esc(name)}</div><div class="aia">${esc(addr)}</div></div></div>`;
+}).join(’’);
+box.style.display=‘block’;
 }
 
-function toggleFollow() {
-  S.follow=!S.follow; document.getElementById('follow-dot').style.display=S.follow?'block':'none';
-  if (S.follow&&S.lat&&map){map.setView([S.lat,S.lng]);setCentered(true);} tog('t-follow',S.follow);
+function hideAC(){$(‘ac’).style.display=‘none’;}
+function pickAC(i){
+const d=_acList[i];hideAC();
+$(‘si’).value=d.name||d.display_name.split(’,’)[0];
+$(‘si’).blur();
+navigate(parseFloat(d.lat),parseFloat(d.lon),d.display_name);
 }
 
-function toggleWaze()  { S.waze=!S.waze;  if(!S.waze) updateAlertUI([]); tog('t-waze',S.waze); }
-function toggleSound() { S.sound=!S.sound; tog('t-sound',S.sound); }
-function toggleBanner() { S.banner=!S.banner; document.getElementById('banner').style.display=S.banner?'flex':'none'; tog('t-banner',S.banner); }
-function zoomIn()  { map&&map.zoomIn(); }
-function zoomOut() { map&&map.zoomOut(); }
-function recenter() { if(map&&S.lat){map.flyTo([S.lat,S.lng],15,{duration:.6});setCentered(true);} }
-function setCentered(v){ S.centered=v; document.getElementById('recenter-btn').style.display=v?'none':'flex'; }
-function checkCentered(){ if(!S.lat||!map)return; const c=map.getCenter(); setCentered(dist(S.lat,S.lng,c.lat,c.lng)<80); }
-function updateSpeedHUD(){ document.getElementById('speed').style.display=S.speed>3?'block':'none'; document.getElementById('speed-val').textContent=S.speed; }
-function updateNeedle(){ if(S.heading!==null){const n=document.getElementById('needle');n.setAttribute('transform',`rotate(${S.heading},12,12)`);} }
-function openSettings() { document.getElementById('settings-overlay').style.display='flex'; }
-function closeSettings(){ document.getElementById('settings-overlay').style.display='none'; }
-function overlayClick(e){ if(e.target.id==='settings-overlay') closeSettings(); }
-function tog(id,v){ const el=document.getElementById(id); if(el) el.classList.toggle('on',v); }
+async function doSearch(){
+const q=$(‘si’).value.trim();if(!q)return;
+const btn=$(‘gb’);btn.textContent=’…’;btn.disabled=true;
+hideAC();
+try{
+const c=map.getCenter();
+const url=`https://nominatim.openstreetmap.org/search?q=${enc(q)}&format=json&limit=3&viewbox=${c.lng-3},${c.lat-3},${c.lng+3},${c.lat+3}&bounded=0`;
+const res=await fetch(url,{headers:{‘Accept-Language’:‘ru,ro,en’},signal:AbortSignal.timeout(8000)});
+const data=await res.json();
+if(data&&data.length){
+$(‘si’).value=data[0].name||data[0].display_name.split(’,’)[0];
+navigate(parseFloat(data[0].lat),parseFloat(data[0].lon),data[0].display_name);
+}else{$(‘si’).placeholder=‘Not found — try different address’;}
+}catch(_){$(‘si’).placeholder=‘Network error — try again’;}
+btn.textContent=‘Go’;btn.disabled=false;
+}
+
+// ROUTING
+async function navigate(lat,lon,name){
+destName=name.split(’,’)[0];
+if(routeLayer){routeLayer.remove();routeLayer=null;}
+if(destMarker){destMarker.remove();destMarker=null;}
+// remove old white outline
+map.eachLayer(l=>{if(l.options&&l.options._isOutline)l.remove();});
+
+destMarker=L.marker([lat,lon],{icon:L.divIcon({html:’<div style="font-size:34px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.8))">📍</div>’,className:’’,iconSize:[34,42],iconAnchor:[17,42]})}).addTo(map);
+$(‘nb’).style.display=‘block’;
+setTxt(‘ns’,‘Calculating route…’);setTxt(‘ndv’,’…’);setTxt(‘neta’,’’);setTxt(‘tico’,‘⏳’);setTxt(‘ndest’,’→ ’+destName);
+
+if(!ST.hasGPS){
+map.setView([lat,lon],14,{animate:true,duration:.7});
+setTxt(‘ns’,‘📍 ‘+destName);setTxt(‘ndv’,’?’);setTxt(‘ndu’,’’);setTxt(‘neta’,‘Enable GPS for routing’);
+return;
+}
+
+try{
+const url=`https://router.project-osrm.org/route/v1/driving/${ST.lng},${ST.lat};${lon},${lat}?overview=full&geometries=geojson&steps=true`;
+const res=await fetch(url,{signal:AbortSignal.timeout(14000)});
+const data=await res.json();
+if(data.code!==‘Ok’||!data.routes.length){setTxt(‘ns’,‘⚠️ Route not found’);setTxt(‘tico’,‘⚠️’);return;}
+const route=data.routes[0];
+totalDist=route.distance;totalTime=route.duration;
+routeSteps=route.legs[0].steps;stepIdx=0;ST.navigating=true;
+const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+// white outline
+const outline=L.polyline(coords,{color:’#fff’,weight:11,opacity:.2,lineJoin:‘round’,lineCap:‘round’});
+outline.options._isOutline=true;
+outline.addTo(map);
+routeLayer=L.polyline(coords,{color:’#3b82f6’,weight:7,opacity:.9,lineJoin:‘round’,lineCap:‘round’}).addTo(map);
+map.fitBounds(routeLayer.getBounds(),{padding:[80,80],maxZoom:16});
+updateNavUI();updateETA(totalDist,totalTime);
+$(‘etab’).style.display=‘flex’;
+ST.follow=true;$(‘fd’).style.display=‘block’;setTgl(‘tfollow’,true);
+}catch(e){setTxt(‘ns’,‘⚠️ Routing error’);setTxt(‘tico’,‘❌’);console.error(e);}
+}
+
+function tickNav(){
+if(!routeSteps.length||!ST.lat)return;
+for(let i=stepIdx;i<Math.min(stepIdx+6,routeSteps.length);i++){
+const loc=routeSteps[i].maneuver.location;
+if(geoD(ST.lat,ST.lng,loc[1],loc[0])<35&&stepIdx<routeSteps.length-1)stepIdx=i+1;
+}
+const last=routeSteps[routeSteps.length-1].maneuver.location;
+const dDest=geoD(ST.lat,ST.lng,last[1],last[0]);
+if(dDest<25){arriveNav();return;}
+updateNavUI();
+updateETA(dDest,totalTime*(dDest/totalDist));
+}
+
+function updateNavUI(){
+if(!routeSteps.length)return;
+const step=routeSteps[Math.min(stepIdx,routeSteps.length-1)];
+const loc=step.maneuver.location;
+const d=geoD(ST.lat,ST.lng,loc[1],loc[0]);
+setTxt(‘ns’,step.name||mLabel(step.maneuver));
+setTxt(‘ndv’,fmtDV(d));setTxt(‘ndu’,fmtDU(d));
+setTxt(‘tico’,tEmoji(step.maneuver.type,step.maneuver.modifier));
+}
+
+function updateETA(dist,sec){
+const t=new Date(Date.now()+sec*1000);
+setTxt(‘eat’,t.getHours()+’:’+String(t.getMinutes()).padStart(2,‘0’));
+setTxt(‘elt’,fmtT(sec));setTxt(‘edt’,fmtD(dist));
+}
+
+function arriveNav(){setTxt(‘ns’,‘🏁 Arrived!’);setTxt(‘tico’,‘🏁’);setTimeout(cancelNav,4000);}
+
+function cancelNav(){
+ST.navigating=false;
+if(routeLayer){routeLayer.remove();routeLayer=null;}
+if(destMarker){destMarker.remove();destMarker=null;}
+map.eachLayer(l=>{if(l.options&&l.options._isOutline)l.remove();});
+$(‘nb’).style.display=‘none’;$(‘etab’).style.display=‘none’;
+$(‘si’).value=’’;routeSteps=[];stepIdx=0;
+}
+
+function tEmoji(type,mod){
+if(type===‘arrive’)return’🏁’;if(type===‘depart’)return’🚀’;
+if(!mod)return’↑’;
+if(mod.includes(‘sharp left’))return’↰’;if(mod.includes(‘left’))return’←’;
+if(mod.includes(‘sharp right’))return’↱’;if(mod.includes(‘right’))return’→’;
+if(mod.includes(‘uturn’))return’↩’;
+if(mod.includes(‘slight left’))return’↖’;if(mod.includes(‘slight right’))return’↗’;
+return’↑’;
+}
+function mLabel(m){return{turn:‘Turn’,merge:‘Merge’,depart:‘Start’,arrive:‘Arrive’,fork:‘Take fork’,roundabout:‘Roundabout’,‘exit roundabout’:‘Exit roundabout’,‘new name’:‘Continue’}[m.type]||‘Continue’;}
+
+// WAZE
+async function fetchWaze(){
+if(!ST.waze||!map)return;
+const b=map.getBounds();
+const wu=`https://www.waze.com/live-map/api/georss?top=${b.getNorth()}&bottom=${b.getSouth()}&left=${b.getWest()}&right=${b.getEast()}`;
+try{
+const res=await fetch(‘https://corsproxy.io/?’+encodeURIComponent(wu),{signal:AbortSignal.timeout(10000)});
+if(!res.ok)return;
+const data=await res.json();
+renderWaze(data.alerts||[]);
+}catch(_){}
+}
+
+function renderWaze(raw){
+alertMarkers.forEach(m=>m.remove());alertMarkers=[];
+const alerts=raw.filter(a=>[‘POLICE’,‘ACCIDENT’,‘HAZARD’,‘ROAD_CLOSED’].includes(a.type));
+const emoji={POLICE:‘🚔’,ACCIDENT:‘💥’,HAZARD:‘⚠️’,ROAD_CLOSED:‘🚧’};
+const bg={POLICE:‘rgba(30,64,175,.85)’,ACCIDENT:‘rgba(185,28,28,.85)’,HAZARD:‘rgba(120,53,15,.85)’,ROAD_CLOSED:‘rgba(55,65,81,.85)’};
+const cnt={POLICE:0,ACCIDENT:0,HAZARD:0};
+alerts.forEach(a=>{
+if(cnt[a.type]!==undefined)cnt[a.type]++;
+const m=L.marker([a.location.y,a.location.x],{
+icon:L.divIcon({html:`<div class="wm" style="background:${bg[a.type]||bg.HAZARD}">${emoji[a.type]||'⚠️'}</div>`,className:’’,iconSize:[36,36],iconAnchor:[18,18]}),
+zIndexOffset:500
+});
+m.bindTooltip((a.street?a.street+’ — ‘:’’)+a.type,{direction:‘top’});
+m.addTo(map);alertMarkers.push(m);
+if(a.type===‘POLICE’&&ST.hasGPS&&!ST.policeAlerted.has(a.uuid)){
+if(geoD(ST.lat,ST.lng,a.location.y,a.location.x)<800){
+ST.policeAlerted.add(a.uuid);showPolice();
+}
+}
+});
+setBadge(‘arp’,‘cp’,cnt.POLICE);setBadge(‘ara’,‘ca’,cnt.ACCIDENT);setBadge(‘arh’,‘ch’,cnt.HAZARD);
+refreshAbox();
+}
+
+function showPolice(){
+const el=$(‘po’);el.classList.remove(‘show’);void el.offsetWidth;el.classList.add(‘show’);
+clearTimeout(policeTO);policeTO=setTimeout(()=>el.classList.remove(‘show’),4500);
+if(ST.sound)beep();
+}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.35,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.4);o.start();o.stop(c.currentTime+.4);}catch(_){}}
+
+// EV CHARGING STATIONS (OpenChargeMap — free, covers Moldova+Europe, all networks)
+async function fetchEV(){
+if(!ST.ev||!map)return;
+const b=map.getBounds();
+const zoom=map.getZoom();
+// Only fetch when zoomed in enough to avoid too many results
+if(zoom<9){clearEVMarkers();return;}
+
+// OpenChargeMap API — no key needed for basic use, covers all networks
+const maxResults=zoom<12?50:200;
+let url=`https://api.openchargemap.io/v3/poi?output=json&maxresults=${maxResults}`
++`&boundingbox=(${b.getSouth()},${b.getWest()}),(${b.getNorth()},${b.getEast()})`
++`&compact=true&verbose=false`;
+
+if(ST.scOnly){
+// OperatorID 3534 = Tesla Supercharger in OpenChargeMap
+url+=`&operatorid=3534`;
+}
+
+try{
+const res=await fetch(url,{signal:AbortSignal.timeout(15000)});
+if(!res.ok)return;
+const data=await res.json();
+renderEV(data||[]);
+}catch(_){
+// Fallback to Overpass if OpenChargeMap fails
+fetchEVOverpass();
+}
+}
+
+async function fetchEVOverpass(){
+if(!ST.ev||!map)return;
+const b=map.getBounds();
+let filter=ST.scOnly
+?`["amenity"="charging_station"]["network"~"Tesla|Supercharger",i]`
+:`["amenity"="charging_station"]`;
+const q=`[out:json][timeout:20];node${filter}(${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});out body;`;
+try{
+const res=await fetch(‘https://overpass-api.de/api/interpreter’,{method:‘POST’,body:q,signal:AbortSignal.timeout(15000)});
+if(!res.ok)return;
+const data=await res.json();
+renderEVOverpass(data.elements||[]);
+}catch(_){}
+}
+
+// Color coding by network
+function networkColor(name){
+const n=(name||’’).toLowerCase();
+if(n.includes(‘tesla’)||n.includes(‘supercharger’))return{bg:’#cc0000’,border:‘rgba(255,100,100,.4)’,ico:‘⚡’};
+if(n.includes(‘ionity’))return{bg:’#7c3aed’,border:‘rgba(167,139,250,.4)’,ico:‘⚡’};
+if(n.includes(‘charge’) && n.includes(‘now’))return{bg:’#0369a1’,border:‘rgba(56,189,248,.4)’,ico:‘🔌’};
+if(n.includes(‘ecotrend’)||n.includes(‘ecofactor’)||n.includes(‘evpoint’))return{bg:’#15803d’,border:‘rgba(74,222,128,.4)’,ico:‘🔌’};
+if(n.includes(‘rewe’)||n.includes(‘aldi’)||n.includes(‘lidl’))return{bg:’#b45309’,border:‘rgba(251,191,36,.4)’,ico:‘🔌’};
+return{bg:’#374151’,border:‘rgba(156,163,175,.3)’,ico:‘🔌’};
+}
+
+function renderEV(stations){
+clearEVMarkers();
+stations.forEach(s=>{
+if(!s.AddressInfo)return;
+const lat=s.AddressInfo.Latitude,lon=s.AddressInfo.Longitude;
+if(!lat||!lon)return;
+const opName=(s.OperatorInfo&&s.OperatorInfo.Title)||’’;
+const netName=(s.OperatorInfo&&s.OperatorInfo.WebsiteURL)||opName;
+const col=networkColor(opName+’ ‘+netName);
+const name=s.AddressInfo.Title||opName||‘EV Station’;
+const conns=s.NumberOfPoints?`${s.NumberOfPoints} points`:’’;
+const html=`<div class="scm" style="background:${col.bg};border-color:${col.border}">${col.ico}</div>`;
+const popup=`<b>${col.ico} ${esc(name)}</b>${opName?'<br><span style="color:#9ca3af">'+esc(opName)+'</span>':''}${conns?'<br>'+conns:''}`;
+const m=L.marker([lat,lon],{
+icon:L.divIcon({html,className:’’,iconSize:[34,34],iconAnchor:[17,17]}),
+zIndexOffset:600
+}).bindPopup(popup);
+m.addTo(map);evMarkers.push(m);
+});
+setBadge(‘arc’,‘cc’,evMarkers.length);refreshAbox();
+}
+
+function renderEVOverpass(nodes){
+clearEVMarkers();
+nodes.forEach(n=>{
+const netName=(n.tags&&(n.tags.network||n.tags.operator||n.tags.brand))||’’;
+const col=networkColor(netName);
+const name=(n.tags&&n.tags.name)||netName||‘EV Station’;
+const cap=(n.tags&&n.tags[‘capacity:charging’])?n.tags[‘capacity:charging’]+’ stalls’:’’;
+const html=`<div class="scm" style="background:${col.bg};border-color:${col.border}">${col.ico}</div>`;
+const m=L.marker([n.lat,n.lon],{
+icon:L.divIcon({html,className:’’,iconSize:[34,34],iconAnchor:[17,17]}),
+zIndexOffset:600
+}).bindPopup(`<b>${col.ico} ${esc(name)}</b>${netName&&netName!==name?'<br><span style="color:#9ca3af">'+esc(netName)+'</span>':''}${cap?'<br>'+cap:''}`);
+m.addTo(map);evMarkers.push(m);
+});
+setBadge(‘arc’,‘cc’,evMarkers.length);refreshAbox();
+}
+
+function clearEVMarkers(){evMarkers.forEach(m=>m.remove());evMarkers=[];}
+
+// CONTROLS
+function applyTheme(){if(!map)return;map.getContainer().classList.toggle(‘dark-tiles’,ST.dark&&!ST.sat);}
+function toggleDark(){ST.dark=!ST.dark;applyTheme();setTgl(‘tdark’,ST.dark);$(‘dkbtn’).textContent=ST.dark?‘☀️’:‘🌙’;}
+function toggleSat(){ST.sat=!ST.sat;if(ST.sat){osmLayer.remove();satLayer.addTo(map);}else{satLayer.remove();osmLayer.addTo(map);}applyTheme();$(‘satbtn’).classList.toggle(‘on’,ST.sat);setTgl(‘tsat’,ST.sat);}
+function toggleFollow(){ST.follow=!ST.follow;$(‘fd’).style.display=ST.follow?‘block’:‘none’;if(ST.follow&&ST.hasGPS){map.setView([ST.lat,ST.lng]);setCentered(true);}setTgl(‘tfollow’,ST.follow);}
+function toggleWaze(){ST.waze=!ST.waze;setTgl(‘twaze’,ST.waze);if(!ST.waze){alertMarkers.forEach(m=>m.remove());alertMarkers=[];[‘arp’,‘ara’,‘arh’].forEach(r=>$(r).style.display=‘none’);refreshAbox();}else fetchWaze();}
+function toggleEV(){ST.ev=!ST.ev;$(‘evbtn’).classList.toggle(‘on’,ST.ev);setTgl(‘tev’,ST.ev);if(!ST.ev){clearEVMarkers();$(‘arc’).style.display=‘none’;refreshAbox();}else fetchEV();}
+function toggleSCOnly(){ST.scOnly=!ST.scOnly;setTgl(‘tsconly’,ST.scOnly);if(ST.ev)fetchEV();}
+function toggleSound(){ST.sound=!ST.sound;setTgl(‘tsound’,ST.sound);}
+function toggleKmh(){ST.kmh=!ST.kmh;setTgl(‘tkmh’,ST.kmh);$(‘su’).textContent=ST.kmh?‘km/h’:‘mph’;}
+function recenter(){if(map&&ST.hasGPS){map.flyTo([ST.lat,ST.lng],15,{duration:.5});setCentered(true);}else if(map)map.setView([47.0,28.9],8);}
+function setCentered(v){$(‘rctr’).style.display=v?‘none’:‘flex’;}
+function renderSpd(){const s=$(‘spd’);s.style.display=ST.spd>3?‘block’:‘none’;setTxt(‘sv’,ST.spd);}
+function renderNeedle(){if(ST.hdg==null)return;$(‘needle’).setAttribute(‘transform’,`rotate(${ST.hdg},24,24)`);}
+function openSettings(){$(‘sbg’).style.display=‘flex’;}
+function closeSettings(){$(‘sbg’).style.display=‘none’;}
+function setBadge(rId,cId,n){$(rId).style.display=n>0?‘flex’:‘none’;setTxt(cId,n);}
+function refreshAbox(){const rows=[‘arp’,‘ara’,‘arh’,‘arc’];$(‘abox’).style.display=rows.some(r=>$(r).style.display!==‘none’)?‘flex’:‘none’;}
+
+// UTILS
+function geoD(a,b,c,d){const R=6371000,dLa=(c-a)*Math.PI/180,dLo=(d-b)*Math.PI/180,x=Math.sin(dLa/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function fmtD(m){return ST.kmh?(m>=1000?(m/1000).toFixed(1)+’ km’:Math.round(m)+’ m’):(m/1609.34>=1?(m/1609.34).toFixed(1)+’ mi’:Math.round(m*3.281)+’ ft’);}
+function fmtDV(m){return ST.kmh?(m>=1000?(m/1000).toFixed(1):String(Math.round(m))):(m/1609.34>=1?(m/1609.34).toFixed(1):String(Math.round(m*3.281)));}
+function fmtDU(m){return ST.kmh?(m>=1000?‘km’:‘m’):(m/1609.34>=1?‘mi’:‘ft’);}
+function fmtT(s){const h=Math.floor(s/3600),m=Math.round((s%3600)/60);return h>0?`${h}h ${m}m`:`${m} min`;}
+function $(x){return document.getElementById(x);}
+function setTxt(x,t){const e=$(x);if(e)e.textContent=t;}
+function setTgl(x,v){const e=$(x);if(e)e.classList.toggle(‘on’,v);}
+function enc(s){return encodeURIComponent(s);}
+function esc(s){return String(s).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);}
+
+// Refresh EV markers when map moves (debounced)
+let evMoveTO=null;
+map&&map.on(“moveend”’,()=>{clearTimeout(evMoveTO);evMoveTO=setTimeout(()=>{if(ST.ev)fetchEV();},1000);});
 </script>
 
 </body>
